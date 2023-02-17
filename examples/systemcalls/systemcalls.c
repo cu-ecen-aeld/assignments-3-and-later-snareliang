@@ -1,4 +1,10 @@
 #include "systemcalls.h"
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -17,7 +23,17 @@ bool do_system(const char *cmd)
  *   or false() if it returned a failure
 */
 
-    return true;
+    int ret = system(cmd); // execute the command using system()
+    if (ret == 0) {
+        printf("Command completed successfully\n");
+        return true;
+
+    } else {
+        printf("Command failed\n");
+        return false;
+
+    }
+    
 }
 
 /**
@@ -58,10 +74,41 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+   pid_t pid = fork(); // create a new process
+    if (pid == -1) {
+      perror("fork"); // error log
+      exit(EXIT_FAILURE);
+    } 
+    else if (pid == 0) {
+       // child process
+      int result = execv(command[0], command); // execv
+      if (result == -1) {
+        perror("execv"); // error log
+        exit(EXIT_FAILURE);
+      }
+    }
 
-    va_end(args);
+    va_end(args);  
+     
+    // parent process
+    int status;
+    wait(&status); // wait for child process to complete
+    if (WIFEXITED(status)) {
+        // child process completed with exit status
+        int exit_status = WEXITSTATUS(status);
+        return (exit_status == 0); // return true if exit status is 0, false otherwise
+    } else if (WIFSIGNALED(status)) {
+        // child process terminated by signal
+        fprintf(stderr, "Child process terminated by signal %d\n", WTERMSIG(status));
+        return false;
+    } else {
+       // unknown error
+        fprintf(stderr, "Unknown error occurred\n");
+        return false;
+    }
+    
 
-    return true;
+
 }
 
 /**
@@ -92,8 +139,23 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
-
+    int pid = fork();
+    if (pid == 0) { // child process
+        int fd = open(outputfile, O_CREAT | O_TRUNC | O_WRONLY, 0666);
+        dup2(fd, STDOUT_FILENO); // redirect stdout to file
+        close(fd);
+        execv(command[0], command);
+        exit(EXIT_FAILURE);
+    } else if (pid > 0) { // parent process
+        int status;
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status)) {
+            return true;
+        } else {
+            return false;
+        }
+    } else { // error
+        return false;
+    }
     va_end(args);
-
-    return true;
 }
