@@ -1,3 +1,4 @@
+#!/bin/sh
 
 
 # Check if both arguments are specified

@@ -26,4 +26,3 @@ writer: $(OBJS)
 
 clean:
 	rm -f writer $(OBJS)
-
