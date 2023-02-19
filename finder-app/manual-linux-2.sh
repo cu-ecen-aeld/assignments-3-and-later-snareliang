@@ -84,8 +84,11 @@ git clone git://busybox.net/busybox.git
     git checkout ${BUSYBOX_VERSION}
     # TODO:  Configure busybox
     # Configure BusyBox
-    sudo make distclean
-    sudo make defconfig
+    
+    make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} defconfig
+
+    # Customize BusyBox configuration
+    make ARCH=${ARCH} CROSS_COMPILE=${CROSS_COMPILE} menuconfig
 
 
 
